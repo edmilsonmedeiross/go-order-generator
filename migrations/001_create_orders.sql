@@ -1,0 +1,20 @@
+CREATE TABLE orders (
+    id CHAR(36) PRIMARY KEY,
+    customer_id VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE order_items (
+    id CHAR(36) PRIMARY KEY,
+    order_id CHAR(36) NOT NULL,
+    product_id CHAR(36) NOT NULL,
+    product_name VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL,
+    price_cents BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+);
