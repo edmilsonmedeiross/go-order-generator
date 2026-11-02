@@ -6,7 +6,11 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/edmilsonmedeiross/go-order-generator/internal/handler"
 	"github.com/edmilsonmedeiross/go-order-generator/internal/infra/mysql"
+	"github.com/edmilsonmedeiross/go-order-generator/internal/repository"
+	"github.com/edmilsonmedeiross/go-order-generator/internal/usecase"
+	"github.com/go-playground/validator/v10"
 )
 
 func main() {
@@ -20,10 +24,21 @@ func main() {
 
 	defer db.Close()
 
-	log.Println("starting server")
+	validator := validator.New()
+
+	orderRepository := repository.NewOrderRepository(db)
+	orderUseCase := usecase.NewOrderUseCase(orderRepository)
+	orderHandler := handler.NewOrderRequestHandler(orderUseCase)
+	productRepository := repository.NewProductRepository(db)
+	productUseCase := usecase.NewProductUseCase(productRepository)
+	productHandler := handler.NewProductHandler(productUseCase, validator)
 
 	http.HandleFunc("/health", HealthHandelr)
+	http.HandleFunc("POST /v1/orders", orderHandler.CreateOrderHandler)
+	http.HandleFunc("POST /v1/products", productHandler.CreateProductHandler)
+	http.HandleFunc("GET /v1/products", productHandler.ListProductsHandler)
 
+	log.Println("starting server")
 	err = http.ListenAndServe(":8080", nil)
 
 	if err != nil {
