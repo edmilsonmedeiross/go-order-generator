@@ -9,3 +9,6 @@ INSERT INTO order_items (id, order_id, product_id, quantity, price_cents, produc
 const getProductInfoQuery = `
 SELECT id, name, price_cents FROM products WHERE id = ?
 `
+const saveOutboxEventQuery = `
+INSERT INTO outbox_events (id, event_type, aggregate_id, payload) VALUES (?, ?, ?, ?)
+`
