@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/edmilsonmedeiross/go-order-generator/internal/domain"
+	"github.com/edmilsonmedeiross/go-order-generator/cmd/products/internal/domain"
 )
 
 type ProductRepository struct {

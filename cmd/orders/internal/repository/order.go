@@ -7,7 +7,7 @@ import (
 
 	"uuid"
 
-	"github.com/edmilsonmedeiross/go-order-generator/internal/domain"
+	"github.com/edmilsonmedeiross/go-order-generator/cmd/orders/internal/domain"
 )
 
 type OrderRepository struct {
@@ -20,14 +20,14 @@ type OrderCreatedEvent struct {
 	Name       string          					`json:"name"`
 	Status     string          					`json:"status"`
 	Items      []OrderCreatedItemEvent 	`json:"items"`
-	TotalCents int64             					`json:"total_cents"`
+	TotalCents int64             				`json:"total_cents"`
 }
 
 type OrderCreatedItemEvent struct {
 	ProductID   string `json:"product_id"`
 	ProductName string `json:"product_name"`
 	Quantity    int    `json:"quantity"`
-	PriceCents  int64    `json:"price_cents"`
+	PriceCents  int64  `json:"price_cents"`
 }
 
 func NewOrderRepository(db *sql.DB) *OrderRepository {
@@ -91,13 +91,4 @@ func (r *OrderRepository) Save(ctx context.Context, order *domain.Order) error {
 	}
 
 	return tx.Commit()
-}
-
-func (r *OrderRepository) GetProductInfo(ctx context.Context, productID string) (domain.ProductInfo, error) {
-	var productInfo domain.ProductInfo
-	err := r.db.QueryRowContext(ctx, getProductInfoQuery, productID).Scan(&productInfo.ID, &productInfo.Name, &productInfo.Price)
-	if err != nil {
-		return domain.ProductInfo{}, err
-	}
-	return productInfo, nil
 }

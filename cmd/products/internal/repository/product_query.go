@@ -7,3 +7,6 @@ INSERT INTO products (id, name, price_cents) VALUES (?, ?, ?)
 const listProductsQuery = `
 SELECT id, name, price_cents FROM products
 `
+const getProductInfoQuery = `
+SELECT id, name, price_cents FROM products WHERE id = ?
+`

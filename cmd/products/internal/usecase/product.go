@@ -2,13 +2,23 @@ package usecase
 
 import (
 	"context"
+	"uuid"
 
-	"github.com/edmilsonmedeiross/go-order-generator/internal/domain"
+	"github.com/edmilsonmedeiross/go-order-generator/cmd/products/internal/domain"
 )
 
 type productRepository interface {
 	Save(ctx context.Context, product *domain.Product) error
 	ListProducts(ctx context.Context) ([]domain.ProductInfo, error)
+	GetProductInfo(ctx context.Context, productID string) (domain.ProductInfo, error)
+}
+
+func (uc *ProductUseCase) GetProduct(ctx context.Context, id string) (ProductInfo, error) {
+	product, err := uc.repo.GetProductInfo(ctx, id)
+	if err != nil {
+		return ProductInfo{}, err
+	}
+	return ProductInfo{ID: product.ID, Name: product.Name, Price: product.Price}, nil
 }
 
 type ProductUseCase struct {
@@ -63,4 +73,8 @@ func (uc *ProductUseCase) ListProducts(ctx context.Context) ([]ProductInfo, erro
 	}
 
 	return prdInfos, nil
+}
+
+func generateID() string {
+	return uuid.New().String()
 }

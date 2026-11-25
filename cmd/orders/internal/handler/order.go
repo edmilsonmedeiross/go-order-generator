@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/edmilsonmedeiross/go-order-generator/internal/usecase"
+	"github.com/edmilsonmedeiross/go-order-generator/cmd/orders/internal/usecase"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -13,25 +13,25 @@ type OrderCreator interface {
 	CreateOrder(ctx context.Context, input usecase.CreateOrderInput) error
 }
 type OrderRequest struct {
-	usecase OrderCreator
+	usecase   OrderCreator
+	validator *validator.Validate
 }
 
 type CreateOrderRequest struct {
-	CustomerID string `json:"customer_id" validate:"required"`
-	Name       string `json:"name" validate:"required"`
+	CustomerID string                   `json:"customer_id" validate:"required"`
+	Name       string                   `json:"name" validate:"required"`
 	Items      []CreateOrderItemRequest `json:"items" validate:"required,min=1,dive"`
 }
 
 type CreateOrderItemRequest struct {
-	ProductID  	string `json:"product_id" validate:"required"`
-	Quantity   	int    `json:"quantity" validate:"required,gt=0"`
+	ProductID string `json:"product_id" validate:"required"`
+	Quantity  int    `json:"quantity" validate:"required,gt=0"`
 }
 
-
 func (or *OrderRequest) CreateOrderHandler(w http.ResponseWriter, r *http.Request) {
-	order, err := parseCreateOrderRequest(r)
+	order, err := or.parseCreateOrderRequest(r)
 	ctx := r.Context()
-	
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -46,21 +46,21 @@ func (or *OrderRequest) CreateOrderHandler(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusCreated)
 }
 
-func NewOrderRequestHandler(useCase OrderCreator) *OrderRequest {
+func NewOrderRequestHandler(useCase OrderCreator, validator *validator.Validate) *OrderRequest {
 	return &OrderRequest{
-		usecase: useCase,
+		usecase:   useCase,
+		validator: validator,
 	}
 }
 
-func parseCreateOrderRequest(r *http.Request) (usecase.CreateOrderInput, error) {
+func (or *OrderRequest) parseCreateOrderRequest(r *http.Request) (usecase.CreateOrderInput, error) {
 	var req CreateOrderRequest
-	validate := validator.New()
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return usecase.CreateOrderInput{}, err
 	}
 
-	if err := validate.Struct(req); err != nil {
+	if err := or.validator.Struct(req); err != nil {
 		return usecase.CreateOrderInput{}, err
 	}
 
@@ -68,11 +68,11 @@ func parseCreateOrderRequest(r *http.Request) (usecase.CreateOrderInput, error) 
 		CustomerID: req.CustomerID,
 		Name:       req.Name,
 	}
-	
+
 	for _, item := range req.Items {
 		order.Items = append(order.Items, usecase.CreateOrderItemInput{
-			ProductID:  	item.ProductID,
-			Quantity:   	item.Quantity,
+			ProductID: item.ProductID,
+			Quantity:  item.Quantity,
 		})
 	}
 

@@ -2,21 +2,40 @@ package handler
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 
-	"github.com/edmilsonmedeiross/go-order-generator/internal/usecase"
+	"github.com/edmilsonmedeiross/go-order-generator/cmd/products/internal/usecase"
 	"github.com/go-playground/validator/v10"
 )
 
 type productCreator interface {
 	CreateProduct(ctx context.Context, product usecase.ProductInput) error
 	ListProducts(ctx context.Context) ([]usecase.ProductInfo, error)
+	GetProduct(ctx context.Context, id string) (usecase.ProductInfo, error)
+}
+
+func (ph *ProductHandler) GetProductHandler(w http.ResponseWriter, r *http.Request) {
+	product, err := ph.usecase.GetProduct(r.Context(), r.PathValue("id"))
+	if errors.Is(err, sql.ErrNoRows) {
+		http.Error(w, "product not found", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		http.Error(w, "failed to get product", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(ProductResponse{ID: product.ID, Name: product.Name, Price: product.Price}); err != nil {
+		return
+	}
 }
 
 type ProductRequest struct {
 	Name  string `json:"name" validate:"required,min=1"`
-	Price int64    `json:"price_cents" validate:"required,gt=0"`
+	Price int64  `json:"price_cents" validate:"required,gt=0"`
 }
 
 type ProductResponse struct {
@@ -26,14 +45,14 @@ type ProductResponse struct {
 }
 
 type ProductHandler struct {
-	usecase 			productCreator
-	validator     *validator.Validate
+	usecase   productCreator
+	validator *validator.Validate
 }
 
 func NewProductHandler(productCreator productCreator, validator *validator.Validate) *ProductHandler {
 	return &ProductHandler{
-		usecase: 		productCreator,
-		validator: 	validator,
+		usecase:   productCreator,
+		validator: validator,
 	}
 }
 
@@ -52,7 +71,7 @@ func (ph *ProductHandler) CreateProductHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	prd := usecase.ProductInput{	
+	prd := usecase.ProductInput{
 		Name:  product.Name,
 		Price: product.Price,
 	}
@@ -68,7 +87,7 @@ func (ph *ProductHandler) CreateProductHandler(w http.ResponseWriter, r *http.Re
 
 func (ph *ProductHandler) ListProductsHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	
+
 	products, err := ph.usecase.ListProducts(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
